@@ -1,0 +1,768 @@
+<!DOCTYPE html>
+<html lang="en" class="h-full bg-gray-100">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>251108 - PRC Oil + CTO Energy Security Model (v2)</title>
+    <!-- 1. Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- 2. Vega-Embed for charting -->
+    <script src="https://cdn.jsdelivr.net/npm/vega@5"></script>
+    <script src="https://cdn.jsdelivr.net/npm/vega-lite@5"></script>
+    <script src="https://cdn.jsdelivr.net/npm/vega-embed@6"></script>
+    <!-- 3. Google Font: Roboto Mono -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Roboto+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+    <style>
+        /* Apply Roboto Mono */
+        body {
+            font-family: 'Roboto Mono', monospace;
+        }
+        /* Hide default number input spinners */
+        input[type=number]::-webkit-inner-spin-button,
+        input[type=number]::-webkit-outer-spin-button {
+            -webkit-appearance: none;
+            margin: 0;
+        }
+        input[type=number] {
+            -moz-appearance: textfield;
+            text-align: center;
+        }
+        /* Simple focus styles for minimalism */
+        input[type="number"]:focus {
+            box-shadow: 0 0 0 2px #2563eb;
+            outline: none;
+            z-index: 10;
+            position: relative;
+        }
+        /* Clickable asterisk */
+        .form-field__toggle {
+            cursor: pointer;
+            color: #2563eb;
+            font-weight: bold;
+            margin-left: 2px;
+        }
+        
+        /* NEW STYLE for fixed-width table columns */
+        .fixed-table {
+            table-layout: fixed;
+            width: 100%;
+        }
+    </style>
+</head>
+<body class="font-mono antialiased text-gray-800">
+    <div class="flex flex-col lg:flex-row lg:items-start">
+        
+        <!-- === LEFT PANEL: INPUTS === -->
+        <div class="w-full lg:w-1/3 xl:w-1/4 p-6 bg-white border-r border-gray-200 lg:sticky lg:top-0 lg:min-h-screen">
+            <h1 class="text-2xl font-bold text-gray-900 mb-6">PRC Oil + CTO Energy Security Model</h1>
+
+            <div class="space-y-6">
+                <!-- --- Supply Inputs --- -->
+                <section>
+                    <h2 class="text-lg font-semibold text-gray-900 border-b pb-2 mb-4">Domestic Supply (mbpd)</h2>
+                    <div class="space-y-3">
+                        <!-- Crude -->
+                        <div class="form-field flex justify-between items-center">
+                            <label class="form-field__label text-sm font-medium text-gray-700">Crude</label>
+                            <div class="form-field__control flex items-center space-x-px w-32">
+                                <button type="button" class="decrement w-8 h-8 bg-gray-200 text-gray-700 hover:bg-gray-300">-</button>
+                                <input type="number" id="crude_y0" value="4.3" step="0.1" class="w-full h-8 p-2 border-y border-gray-300 text-sm">
+                                <button type="button" class="increment w-8 h-8 bg-gray-200 text-gray-700 hover:bg-gray-300">+</button>
+                            </div>
+                        </div>
+                        <!-- Domestic Crude Growth / yr -->
+                        <div class="form-field flex justify-between items-center">
+                            <label class="form-field__label text-sm font-medium text-gray-700">Crude Growth / yr</label>
+                            <div class="form-field__control flex items-center space-x-px w-32">
+                                <button type="button" class="decrement w-8 h-8 bg-gray-200 text-gray-700 hover:bg-gray-300">-</button>
+                                <input type="number" id="crude_growth_per_year" value="0.0" step="0.1" class="w-full h-8 p-2 border-y border-gray-300 text-sm">
+                                <button type="button" class="increment w-8 h-8 bg-gray-200 text-gray-700 hover:bg-gray-300">+</button>
+                            </div>
+                        </div>
+                        <!-- CTO Supply (Y0) -->
+                        <div class="form-field flex justify-between items-center">
+                            <label class="form-field__label text-sm font-medium text-gray-700">CTO Supply (Y0)</label>
+                            <div class="form-field__control flex items-center space-x-px w-32">
+                                <button type="button" class="decrement w-8 h-8 bg-gray-200 text-gray-700 hover:bg-gray-300">-</button>
+                                <input type="number" id="cto_supply_y0" value="2.5" step="0.1" class="w-full h-8 p-2 border-y border-gray-300 text-sm">
+                                <button type="button" class="increment w-8 h-8 bg-gray-200 text-gray-700 hover:bg-gray-300">+</button>
+                            </div>
+                        </div>
+                        <!-- CTO Growth / yr -->
+                        <div class="form-field flex justify-between items-center">
+                            <label class="form-field__label text-sm font-medium text-gray-700">CTO Growth / yr</label>
+                            <div class="form-field__control flex items-center space-x-px w-32">
+                                <button type="button" class="decrement w-8 h-8 bg-gray-200 text-gray-700 hover:bg-gray-300">-</button>
+                                <input type="number" id="cto_growth_per_year" value="0.4" step="0.1" class="w-full h-8 p-2 border-y border-gray-300 text-sm">
+                                <button type="button" class="increment w-8 h-8 bg-gray-200 text-gray-700 hover:bg-gray-300">+</button>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- --- Demand Inputs --- -->
+                <section>
+                    <!-- UPDATED TITLE -->
+                    <h2 class="text-lg font-semibold text-gray-900 border-b pb-2 mb-4">Domestic Demand (Y0, mbpd)</h2>
+                    
+                    <!-- UPDATED: petchem ind (net oil) changed to petchem ind (GROSS) -->
+                    <div class="form-field flex justify-between items-center mb-2">
+                        <label class="form-field__label text-sm font-medium text-gray-700">petchem ind <span id="industry-toggle" class="form-field__toggle">*</span></label>
+                        <div class="form-field__control flex items-center space-x-px w-32">
+                            <button type="button" class="decrement w-8 h-8 bg-gray-200 text-gray-700 hover:bg-gray-300">-</button>
+                            <input type="number" id="industry_demand_y0" value="5.5" step="0.1" class="w-full h-8 p-2 border-y border-gray-300 text-sm">
+                            <button type="button" class="increment w-8 h-8 bg-gray-200 text-gray-700 hover:bg-gray-300">+</button>
+                        </div>
+                    </div>
+                    <!-- Industry Explanation (Collapsible) -->
+                    <div id="industry-logic" class="hidden bg-gray-50 p-3 border border-gray-200 mb-4">
+                        <p class="text-xs text-gray-600">
+                            <!-- UPDATED LOGIC TEXT -->
+                            This is **Gross** industrial/petchem demand.
+                            The model calculates **Net Demand (Y0)** = Gross Demand (5.5) - CTO Supply (Y0) (2.5) = 3.0.
+                            This 3.0 net demand is then displaced by 'CTO Growth / yr'.
+                        </p>
+                    </div>
+
+                    <!-- UPDATED: Other Energy (was Residential) -->
+                    <div class="form-field flex justify-between items-center mb-2">
+                        <label class="form-field__label text-sm font-medium text-gray-700">Other Energy <span id="other_energy-toggle" class="form-field__toggle">*</span></label>
+                         <div class="form-field__control flex items-center space-x-px w-32">
+                            <button type="button" class="decrement w-8 h-8 bg-gray-200 text-gray-700 hover:bg-gray-300">-</button>
+                            <input type="number" id="other_energy_demand_y0" value="1.0" step="0.1" class="w-full h-8 p-2 border-y border-gray-300 text-sm">
+                            <button type="button" class="increment w-8 h-8 bg-gray-200 text-gray-700 hover:bg-gray-300">+</button>
+                        </div>
+                    </div>
+                     <div id="other_energy-logic" class="hidden bg-gray-50 p-3 border border-gray-200 mb-4">
+                         <p class="text-xs text-gray-600">
+                            Oil for energy (e.g., LPG/Heating). Assumed to be rapidly displaced by natural gas and electrification.
+                         </p>
+                     </div>
+                    <div class="form-field flex justify-between items-center mb-4">
+                        <label class="form-field__label text-sm font-medium text-gray-700">Decline / yr</label>
+                        <div class="form-field__control flex items-center space-x-px w-32">
+                            <button type="button" class="decrement w-8 h-8 bg-gray-200 text-gray-700 hover:bg-gray-300">-</button>
+                            <input type="number" id="other_energy_decline_per_year" value="0.1" step="0.1" class="w-full h-8 p-2 border-y border-gray-300 text-sm">
+                            <button type="button" class="increment w-8 h-8 bg-gray-200 text-gray-700 hover:bg-gray-300">+</button>
+                        </div>
+                    </div>
+
+                    <!-- UPDATED: Other Non-Energy (was Ag/Comm) -->
+                    <div class="form-field flex justify-between items-center mb-2">
+                        <!-- UPDATED LABEL -->
+                        <label class="form-field__label text-sm font-medium text-gray-700">Other Non-Energy <span id="non_energy-toggle" class="form-field__toggle">*</span></label>
+                        <div class="form-field__control flex items-center space-x-px w-32">
+                            <button type="button" class="decrement w-8 h-8 bg-gray-200 text-gray-700 hover:bg-gray-300">-</button>
+                            <input type="number" id="non_energy_demand_y0" value="1.0" step="0.1" class="w-full h-8 p-2 border-y border-gray-300 text-sm">
+                            <button type="button" class="increment w-8 h-8 bg-gray-200 text-gray-700 hover:bg-gray-300">+</button>
+                        </div>
+                    </div>
+                    <div id="non_energy-logic" class="hidden bg-gray-50 p-3 border border-gray-200 mb-4">
+                        <p class="text-xs text-gray-600">
+                            "Sticky" non-energy oil (Asphalt, Lubes). Assumed to have a very low decline rate.
+                        </p>
+                    </div>
+                    <div class="form-field flex justify-between items-center mb-4">
+                        <label class="form-field__label text-sm font-medium text-gray-700">Decline / yr</label>
+                        <div class="form-field__control flex items-center space-x-px w-32">
+                            <button type="button" class="decrement w-8 h-8 bg-gray-200 text-gray-700 hover:bg-gray-300">-</button>
+                            <input type="number" id="non_energy_decline_per_year" value="0.05" step="0.01" class="w-full h-8 p-2 border-y border-gray-300 text-sm">
+                            <button type="button" class="increment w-8 h-8 bg-gray-200 text-gray-700 hover:bg-gray-300">+</button>
+                        </div>
+                    </div>
+
+                    <!-- SPR -->
+                     <div class="form-field flex justify-between items-center mb-2">
+                        <label class="form-field__label text-sm font-medium text-gray-700">SPR Fill / yr <span id="spr-toggle" class="form-field__toggle">*</span></label>
+                        <div class="form-field__control flex items-center space-x-px w-32">
+                            <button type="button" class="decrement w-8 h-8 bg-gray-200 text-gray-700 hover:bg-gray-300">-</button>
+                            <input type="number" id="spr_fill_demand" value="0.5" step="0.1" class="w-full h-8 p-2 border-y border-gray-300 text-sm">
+                            <button type="button" class="increment w-8 h-8 bg-gray-200 text-gray-700 hover:bg-gray-300">+</button>
+                        </div>
+                    </div>
+                    <div id="spr-logic" class="hidden bg-gray-50 p-3 border border-gray-200 mb-4">
+                        <p class="text-xs text-gray-600">
+                            A high-priority policy "demand" to fill the strategic reserve.
+                        </p>
+                    </div>
+                    <div class="form-field flex justify-between items-center">
+                        <label class="form-field__label text-sm font-medium text-gray-700">SPR Fill (Years)</label>
+                        <div class="form-field__control flex items-center space-x-px w-32">
+                            <button type="button" class="decrement w-8 h-8 bg-gray-200 text-gray-700 hover:bg-gray-300">-</button>
+                            <input type="number" id="spr_fill_duration" value="4" step="1" class="w-full h-8 p-2 border-y border-gray-300 text-sm">
+                            <button type="button" class="increment w-8 h-8 bg-gray-200 text-gray-700 hover:bg-gray-300">+</button>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- --- Transport S-Curve Inputs --- -->
+                <section>
+                    <h2 class="text-lg font-semibold text-gray-900 border-b pb-2 mb-4">Transport S-Curve (%)</h2>
+                    <div class="form-field flex justify-between items-center mb-4">
+                        <label class="form-field__label text-sm font-medium text-gray-700">Transport</label>
+                        <div class="form-field__control flex items-center space-x-px w-32">
+                            <button type="button" class="decrement w-8 h-8 bg-gray-200 text-gray-700 hover:bg-gray-300">-</button>
+                            <input type="number" id="transport_demand_y0" value="8.0" step="0.1" class="w-full h-8 p-2 border-y border-gray-300 text-sm">
+                            <button type="button" class="increment w-8 h-8 bg-gray-200 text-gray-700 hover:bg-gray-300">+</button>
+                        </div>
+                    </div>
+                    
+                    <!-- Headers -->
+                    <div class="grid grid-cols-3 gap-3 text-xs font-medium text-gray-500 mb-2">
+                        <span class="col-span-1">Sector</span>
+                        <span class="text-center">Y0 Pen. %</span>
+                        <span class="text-center">Y10 Pen. %</span>
+                    </div>
+                    
+                    <!-- S-Curve Inputs Grid -->
+                    <div id="transport-inputs" class="space-y-2">
+                        <!-- Passenger -->
+                        <div class="grid grid-cols-3 gap-3 items-center">
+                            <label class="text-sm font-medium text-gray-700">Passenger</label>
+                            <input type="number" id="pass_y0" value="9" class="w-full h-8 p-2 border border-gray-300 text-sm text-center">
+                            <input type="number" id="pass_y10" value="60" class="w-full h-8 p-2 border border-gray-300 text-sm text-center">
+                        </div>
+                        <!-- Light Comm -->
+                        <div class="grid grid-cols-3 gap-3 items-center">
+                            <label class="text-sm font-medium text-gray-700">Light Comm.</label>
+                            <input type="number" id="light_y0" value="3" class="w-full h-8 p-2 border border-gray-300 text-sm text-center">
+                            <input type="number" id="light_y10" value="50" class="w-full h-8 p-2 border border-gray-300 text-sm text-center">
+                        </div>
+                        <!-- Heavy Trucks -->
+                        <div class="grid grid-cols-3 gap-3 items-center">
+                            <label class="text-sm font-medium text-gray-700">Heavy Trucks</label>
+                            <input type="number" id="heavy_y0" value="2" class="w-full h-8 p-2 border border-gray-300 text-sm text-center">
+                            <input type="number" id="heavy_y10" value="30" class="w-full h-8 p-2 border border-gray-300 text-sm text-center">
+                        </div>
+                        <!-- Buses -->
+                        <div class="grid grid-cols-3 gap-3 items-center">
+                            <label class="text-sm font-medium text-gray-700">Buses</label>
+                            <input type="number" id="bus_y0" value="40" class="w-full h-8 p-2 border border-gray-300 text-sm text-center">
+                            <input type="number" id="bus_y10" value="80" class="w-full h-8 p-2 border border-gray-300 text-sm text-center">
+                        </div>
+                        <!-- Aviation -->
+                        <div class="grid grid-cols-3 gap-3 items-center">
+                            <label class="text-sm font-medium text-gray-700">Aviation</label>
+                            <input type="number" id="avia_y0" value="0.5" step="0.1" class="w-full h-8 p-2 border border-gray-300 text-sm text-center">
+                            <input type="number" id="avia_y10" value="15" class="w-full h-8 p-2 border border-gray-300 text-sm text-center">
+                        </div>
+                        <!-- Shipping -->
+                        <div class="grid grid-cols-3 gap-3 items-center">
+                            <label class="text-sm font-medium text-gray-700">Shipping</label>
+                            <input type="number" id="ship_y0" value="0.5" step="0.1" class="w-full h-8 p-2 border border-gray-300 text-sm text-center">
+                            <input type="number" id="ship_y10" value="3" class="w-full h-8 p-2 border border-gray-300 text-sm text-center">
+                        </div>
+                    </div>
+                </section>
+                
+                <!-- --- NEW SECTION: Parity Target --- -->
+                <section>
+                    <h2 class="text-lg font-semibold text-gray-900 border-b pb-2 mb-4">US oil insecurity parity <span id="parity-toggle" class="form-field__toggle">*</span></h2>
+                    <div id="parity-logic" class="hidden bg-gray-50 p-3 border border-gray-200 mb-4">
+                         <p class="text-xs text-gray-600">
+                            US import depedency due to feedstock / refinery mismatch
+                         </p>
+                    </div>
+                    <div class="space-y-3">
+                        <div class="form-field flex justify-between items-center">
+                            <label class="form-field__label text-sm font-medium text-gray-700">% of oil imported</label>
+                            <div class="form-field__control flex items-center space-x-px w-32">
+                                <button type="button" class="decrement w-8 h-8 bg-gray-200 text-gray-700 hover:bg-gray-300">-</button>
+                                <input type="number" id="parity_target_percent" value="30" step="1" class="w-full h-8 p-2 border-y border-gray-300 text-sm">
+                                <button type="button" class="increment w-8 h-8 bg-gray-200 text-gray-700 hover:bg-gray-300">+</button>
+                            </div>
+                        </div>
+                        <!-- REMOVED PARITY RANGE INPUT ROW -->
+                    </div>
+                </section>
+            </div>
+        </div>
+
+        <!-- === RIGHT PANEL: OUTPUTS === -->
+        <div class="w-full lg:w-2/3 xl:w-3/4 bg-white">
+            <!-- 1. Chart Output -->
+            <div class="p-6 lg:pt-10 lg:px-10 lg:pb-0">
+                <h2 class="text-xl font-semibold text-gray-900 mb-4">Oil Equivalent Balance (mbpd)</h2>
+                <!-- Set overflow-hidden to contain the legend -->
+                <div id="chart" class="w-full overflow-hidden">
+                    <p class="text-gray-500">Chart will appear here...</p>
+                </div>
+            </div>
+
+            <!-- 2. Summary Table Output -->
+            <div class="flex-shrink-0 bg-white border-t border-gray-200">
+                 <h2 class="text-xl font-semibold text-gray-900 px-6 lg:px-10 pt-6 mb-4">Domestic Supply vs. Total Demand (mbpd)</h2>
+                <div id="table-container" class="overflow-x-auto">
+                    <p class="text-gray-500 px-6 lg:px-10 pb-6">Table will appear here...</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // --- Get Input Elements ---
+        const $ = (id) => document.getElementById(id);
+        const allInputs = document.querySelectorAll('input[type="number"]');
+
+        const inputs = {
+            // Supply
+            crude_y0: () => parseFloat($('crude_y0').value),
+            crude_growth_per_year: () => parseFloat($('crude_growth_per_year').value),
+            cto_supply_y0: () => parseFloat($('cto_supply_y0').value),
+            cto_growth_per_year: () => parseFloat($('cto_growth_per_year').value),
+            
+            // Demand
+            industry_demand_y0: () => parseFloat($('industry_demand_y0').value), // This is now GROSS demand
+            other_energy_demand_y0: () => parseFloat($('other_energy_demand_y0').value),
+            other_energy_decline_per_year: () => parseFloat($('other_energy_decline_per_year').value),
+            non_energy_demand_y0: () => parseFloat($('non_energy_demand_y0').value),
+            non_energy_decline_per_year: () => parseFloat($('non_energy_decline_per_year').value),
+            spr_fill_demand: () => parseFloat($('spr_fill_demand').value),
+            spr_fill_duration: () => parseInt($('spr_fill_duration').value),
+            
+            // Transport
+            transport_demand_y0: () => parseFloat($('transport_demand_y0').value),
+            pen_y0: {
+                passenger: () => parseFloat($('pass_y0').value) / 100,
+                light_comm: () => parseFloat($('light_y0').value) / 100,
+                heavy_trucks: () => parseFloat($('heavy_y0').value) / 100,
+                buses: () => parseFloat($('bus_y0').value) / 100,
+                aviation: () => parseFloat($('avia_y0').value) / 100,
+                shipping: () => parseFloat($('ship_y0').value) / 100
+            },
+            pen_y10: {
+                passenger: () => parseFloat($('pass_y10').value) / 100,
+                light_comm: () => parseFloat($('light_y10').value) / 100,
+                heavy_trucks: () => parseFloat($('heavy_y10').value) / 100,
+                buses: () => parseFloat($('bus_y10').value) / 100,
+                aviation: () => parseFloat($('avia_y10').value) / 100,
+                shipping: () => parseFloat($('ship_y10').value) / 100
+            },
+            
+            // NEW: Parity Inputs
+            parity_target_percent: () => parseFloat($('parity_target_percent').value) / 100,
+        };
+
+        // --- Model Logic ---
+        const startYear = 2025; // Base year for labels
+
+        // S-Curve Helper Function
+        function logisticCurve(x, L, k, x0) {
+            return L / (1 + Math.exp(-k * (x - x0)));
+        }
+
+        // Main Projection Function
+        function runProjection() {
+            // Check if all inputs are available
+            if (!document.body.contains($('transport_demand_y0'))) {
+                console.log("DOM not ready, skipping projection.");
+                return;
+            }
+
+            const transport_base = inputs.transport_demand_y0();
+            
+            const industry_gross_base = inputs.industry_demand_y0();
+            const cto_supply_y0 = inputs.cto_supply_y0();
+            const industry_net_base = industry_gross_base - cto_supply_y0;
+
+            const other_energy_base = inputs.other_energy_demand_y0();
+            const non_energy_base = inputs.non_energy_demand_y0();
+            
+            // NEW: Get parity target values
+            const parity_target = inputs.parity_target_percent();
+            const parity_range = 0.05; // HARDCODED to 5%
+            // UPDATED: Clamped min range at 0 to prevent highlighting exports
+            const parity_min = Math.max(0, parity_target - parity_range);
+            const parity_max = parity_target + parity_range;
+            
+
+            // Base demands for each transport sector (based on 8.0 base)
+            const transport_sector_demand_y0 = {
+                'passenger': transport_base * (8.0 * 0.45 / 8.0), // 3.6
+                'light_comm': transport_base * (8.0 * 0.15 / 8.0), // 1.2
+                'heavy_trucks': transport_base * (8.0 * 0.25 / 8.0), // 2.0
+                'buses': transport_base * (8.0 * 0.03 / 8.0), // 0.24
+                'aviation': transport_base * (8.0 * 0.08 / 8.0), // 0.64
+                'shipping': transport_base * (8.0 * 0.04 / 8.0)  // 0.32
+            };
+
+            const years = Array.from({ length: 11 }, (_, i) => i); // 0 to 10
+            let projectionData = [];
+            let summaryData = [];
+
+            // --- Generate Penetration Curves ---
+            let penCurves = {};
+            const sectors = ['passenger', 'light_comm', 'heavy_trucks', 'buses', 'aviation', 'shipping'];
+            const curveParams = {
+                passenger: { k: 0.7, x0: 5.0 },
+                light_comm: { k: 0.6, x0: 6.0 },
+                heavy_trucks: { k: 0.5, x0: 7.5 },
+                buses: { k: 0.4, x0: 4.0 },
+                aviation: { k: 1.0, x0: 5.0 }, 
+                shipping: { k: 1.0, x0: 5.0 }
+            };
+
+            sectors.forEach(sector => {
+                penCurves[sector] = [];
+                const y0 = inputs.pen_y0[sector]();
+                const y10 = inputs.pen_y10[sector]();
+                
+                let rawCurve = years.map(y => {
+                    if (sector === 'aviation' || sector === 'shipping') {
+                        return y0 + (y10 - y0) * (y / 10);
+                    }
+                    const params = curveParams[sector];
+                    return logisticCurve(y, y10 + (y10 - y0) * 0.1, params.k, params.x0); 
+                });
+
+                const minRaw = rawCurve[0];
+                const maxRaw = rawCurve[10];
+                penCurves[sector] = rawCurve.map(val => (val - minRaw) / (maxRaw - minRaw) * (y10 - y0) + y0);
+                penCurves[sector][0] = y0;
+                penCurves[sector][10] = y10;
+            });
+
+
+            // --- Run 11-Year Projection Loop ---
+            for (const year of years) {
+                let label;
+                if (year === 0) {
+                    label = `${startYear + year} (0)`;
+                } else {
+                    label = `${startYear + year} (+${year})`;
+                }
+                let row = { Year: year, Label: label, isParityYear: false }; // NEW: Added isParityYear
+
+                // --- A. Calculate Demand Components ---
+                row.SPR_Fill_Demand = year < inputs.spr_fill_duration() ? inputs.spr_fill_demand() : 0.0;
+                row.Industry_Demand = Math.max(0, industry_net_base - (inputs.cto_growth_per_year() * year));
+                row.Other_Energy_Demand = Math.max(0, other_energy_base - (inputs.other_energy_decline_per_year() * year)); 
+                row.Non_Energy_Demand = Math.max(0, non_energy_base - (inputs.non_energy_decline_per_year() * year)); 
+                row.Industrial_Displaced = inputs.cto_growth_per_year() * year;
+
+                let total_ev_savings = 0;
+                for (const sector in transport_sector_demand_y0) {
+                    total_ev_savings += transport_sector_demand_y0[sector] * penCurves[sector][year];
+                }
+                row.Transport_Demand = transport_base - total_ev_savings;
+                
+                row.Total_Net_Oil_Demand = row.Transport_Demand + row.Industry_Demand + row.Other_Energy_Demand + row.Non_Energy_Demand + row.SPR_Fill_Demand;
+
+                // --- B. Calculate Supply Components ---
+                row.Crude = inputs.crude_y0() + (inputs.crude_growth_per_year() * year);
+                row.CTO_Supply = inputs.cto_supply_y0() + (inputs.cto_growth_per_year() * year);
+                let total_supply = row.Crude + row.CTO_Supply;
+                
+                // --- C. Calculate Net Balance ---
+                row.Net_Balance_mbpd = total_supply - row.Total_Net_Oil_Demand;
+
+                // --- D. Calculate Import Dependency and check for Parity ---
+                let import_dependency_ratio = 0;
+                const oil_imports_needed = Math.max(0, row.Total_Net_Oil_Demand - row.Crude);
+                if (row.Total_Net_Oil_Demand > 0) {
+                    import_dependency_ratio = oil_imports_needed / row.Total_Net_Oil_Demand;
+                }
+
+                if (import_dependency_ratio >= parity_min && import_dependency_ratio <= parity_max) {
+                    row.isParityYear = true;
+                }
+                
+                projectionData.push(row);
+
+                // --- E. Populate Summary Table Data ---
+                const non_ind_oil_supply = row.Crude - row.Industry_Demand;
+                const operational_demand = row.Transport_Demand + row.Industry_Demand + row.Other_Energy_Demand + row.Non_Energy_Demand;
+                const total_import = Math.max(0, operational_demand - non_ind_oil_supply);
+                const operational_demand_sum = row.Transport_Demand + row.Industry_Demand + row.Other_Energy_Demand + row.Non_Energy_Demand;
+                const import_gap_metric = non_ind_oil_supply - operational_demand_sum;
+
+                summaryData.push({
+                    Year: row.Label, 
+                    Total_Demand: row.Total_Net_Oil_Demand.toFixed(1),
+                    Total_Supply: total_supply.toFixed(1),
+                    Total_Import: total_import.toFixed(1), 
+                    Transport_Demand: row.Transport_Demand.toFixed(1),
+                    Industry_Demand: row.Industry_Demand.toFixed(1),
+                    Res_Demand: row.Other_Energy_Demand.toFixed(1), 
+                    Ag_Comm_Demand: row.Non_Energy_Demand.toFixed(1), 
+                    Oil_Supply: row.Crude.toFixed(1),
+                    CTO_Supply: row.CTO_Supply.toFixed(1),
+                    Non_Ind_Supply: non_ind_oil_supply.toFixed(1), 
+                    Import_Gap: import_gap_metric.toFixed(1), 
+                    isParityYear: row.isParityYear, // Used for highlighting
+                    Import_Dependency: (import_dependency_ratio * 100).toFixed(0) // Use unified value, no decimals
+                });
+            }
+
+            // --- 4. Render Outputs ---
+            drawChart(projectionData);
+            drawTable(summaryData);
+        }
+
+        <!-- --- Chart Rendering Function --- -->
+        function drawChart(data) {
+            const chart_columns = ['Label', 'Crude', 'CTO_Supply', 'Transport_Demand', 'Industry_Demand', 'Other_Energy_Demand', 'Non_Energy_Demand', 'SPR_Fill_Demand'];
+            let plotData = [];
+            
+            data.forEach(row => {
+                chart_columns.forEach(col => {
+                    if (col !== 'Label') {
+                        let value = row[col];
+                        if (['Transport_Demand', 'Industry_Demand', 'Other_Energy_Demand', 'Non_Energy_Demand', 'SPR_Fill_Demand'].includes(col)) {
+                            value = -value;
+                        }
+                        if (value !== 0) {
+                            plotData.push({ 
+                                Year: row.Label, 
+                                Component: col, 
+                                mbpd: value
+                            });
+                        }
+                    }
+                });
+            });
+
+            const component_rename = {
+                'Crude': 'Crude (Supply)',
+                'CTO_Supply': 'CTO (Supply)',
+                'Transport_Demand': 'Transport (Demand)',
+                'Industry_Demand': 'Petchem Ind (Demand)', 
+                'Other_Energy_Demand': 'Other Energy (Demand)',
+                'Non_Energy_Demand': 'Other Non-Energy (Demand)',
+                'SPR_Fill_Demand': 'SPR Fill (Demand)'
+            };
+            plotData.forEach(d => d.Component = component_rename[d.Component] || d.Component);
+
+            const color_domain_list = [
+                'Crude (Supply)', 'CTO (Supply)',
+                'Transport (Demand)', 'Petchem Ind (Demand)', 'Other Energy (Demand)', 'Other Non-Energy (Demand)', 'SPR Fill (Demand)'
+            ];
+            const color_range_list = [
+                '#cbd5e8', // Pastel Blue
+                '#b3e2cd', // Pastel Green
+                '#fdcdac', // Pastel Orange
+                '#f4cae4', // Pastel Pink/Purple
+                '#e6f5c9', // Pastel Lime
+                '#f1e2cc', // Pastel Tan
+                '#fff2ae'  // Pastel Yellow
+            ];
+            
+            const spec = {
+                "$schema": "https://vega.github.io/schema/vega-lite/v5.json",
+                "width": "container",
+                "height": 400,
+                "config": {
+                    "font": "Roboto Mono",
+                    "view": { "stroke": "transparent" },
+                    "title": { "font": "Roboto Mono", "fontSize": 16, "fontWeight": 700 },
+                    "axis": { "labelFont": "Roboto Mono", "titleFont": "Roboto Mono", "titleFontSize": 12, "labelPadding": 5 },
+                    "legend": {
+                        "orient": "bottom",
+                        "title": null,
+                        "columns": 3,
+                        "labelLimit": 0,
+                        "labelPadding": 15,
+                        "rowPadding": 10,  
+                        "columnPadding": 40,
+                        "labelFont": "Roboto Mono",
+                        "titleFont": "Roboto Mono"
+                    }
+                },
+                "layer": [
+                    {
+                        "data": { "values": plotData },
+                        "mark": "bar",
+                        "encoding": {
+                            "y": { "field": "mbpd", "type": "quantitative", "title": "Oil Equivalent (mbpd)", "axis": {"grid": true} },
+                            "x": { "field": "Year", "type": "ordinal", "title": "Year", "axis": {"labelAngle": 0} },
+                            "color": {
+                                "field": "Component", "type": "nominal", "title": "Balance Component",
+                                "scale": { "domain": color_domain_list, "range": color_range_list }
+                            },
+                            "order": { "field": "Component", "sort": "descending" },
+                            "tooltip": [
+                                { "field": "Year", "type": "ordinal" },
+                                { "field": "Component", "type": "nominal" },
+                                { "field": "mbpd", "type": "quantitative", "format": ".2f" }
+                            ]
+                        }
+                    },
+                    {
+                        "data": { "values": [{"y": 0}] },
+                        "mark": { "type": "rule", "color": "black", "strokeWidth": 1.5 },
+                        "encoding": { "y": { "field": "y", "type": "quantitative" } }
+                    },
+                    {
+                        "data": { "values": data },
+                        "mark": { "type": "line", "color": "black", "strokeWidth": 2 },
+                        "encoding": {
+                            "x": { "field": "Label", "type": "ordinal" },
+                            "y": { "field": "Net_Balance_mbpd", "type": "quantitative" },
+                            "tooltip": [
+                                { "field": "Label", "type": "ordinal", "title": "Year" },
+                                { "field": "Net_Balance_mbpd", "type": "quantitative", "title": "Net Balance", "format": ".1f" }
+                            ]
+                        }
+                    },
+                    {
+                        "data": { "values": data },
+                        "mark": {
+                            "type": "text",
+                            "color": "black",
+                            "font": "Roboto Mono",
+                            "fontSize": 12,
+                            "align": "center",
+                            "baseline": "bottom",
+                            "dy": -10
+                        },
+                        "encoding": {
+                            "x": { "field": "Label", "type": "ordinal" },
+                            "y": { "field": "Net_Balance_mbpd", "type": "quantitative" },
+                            "text": { "field": "Net_Balance_mbpd", "type": "quantitative", "format": ".1f" }
+                        }
+                    },
+                    // --- NEW LAYER: Parity Star ---
+                    {
+                        "data": { "values": data },
+                        "mark": {
+                            "type": "text",
+                            "color": "black", 
+                            "font": "Roboto Mono",
+                            "fontSize": 20,
+                            "align": "center",
+                            "baseline": "bottom",
+                            "text": "★",
+                            "dy": -28 // Position above the number label
+                        },
+                        "encoding": {
+                            "x": { "field": "Label", "type": "ordinal" },
+                            "y": { "field": "Net_Balance_mbpd", "type": "quantitative" },
+                            "opacity": {
+                                "condition": { "test": "datum.isParityYear == true", "value": 1 },
+                                "value": 0
+                            },
+                             "tooltip": [
+                                { "field": "Label", "type": "ordinal", "title": "Year" },
+                                { "value": "Parity Target Hit" }
+                            ]
+                        }
+                    }
+                ]
+            };
+            
+            vegaEmbed('#chart', spec, { "actions": false, "renderer": "svg" });
+        }
+        
+        // --- Table Rendering Function ---
+        function drawTable(data) {
+            const container = $('table-container');
+            let table = '<table class="fixed-table divide-y divide-gray-200">';
+            table += '<thead class="bg-gray-50"><tr>';
+            
+            // UPDATED: 12 columns, re-ordered
+            const headers = [
+                'Year', 'Total Oil<br>Demand', 'Total Supply<br>(Oil + CTO)', 'Non Ind<br>Oil Supply',
+                'TRNSPT', 'P-Chem', 'EN', 'Non-EN', 'Import<br>Gap', 'Oil Import<br>Dependency'
+            ];
+            
+            headers.forEach(h => {
+                table += `<th class="px-2 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-normal">${h}</th>`;
+            });
+            table += '</tr></thead>';
+            table += '<tbody class="bg-white divide-y divide-gray-200">';
+            data.forEach(row => {
+                const highlightClass = row.isParityYear ? 'bg-yellow-100' : '';
+                
+                // NEW: Conditional coloring
+                // UPDATED LOGIC: > 0 is RED (bad), <= 0 is GREEN (good)
+                const totalImportColor = parseFloat(row.Total_Import) > 0 ? 'text-red-600' : 'text-green-600';
+                // UPDATED LOGIC: > 0 is GREEN (surplus), <= 0 is RED (deficit)
+                const importGapColor = parseFloat(row.Import_Gap) > 0 ? 'text-green-600' : 'text-red-600';
+
+                table += `<tr class="${highlightClass}">`;
+                // UPDATED: Re-ordered data cells
+                table += `<td class="px-2 py-3 whitespace-nowrap text-sm font-medium text-gray-900">${row.Year}</td>`;
+                table += `<td class="px-2 py-3 text-sm font-bold text-gray-900 text-center">${row.Total_Demand}</td>`;
+                // NEW: Combined supply column
+                const supplyText = `${row.Total_Supply} <span class="font-normal text-gray-500">(${row.Oil_Supply}+${row.CTO_Supply})</span>`;
+                table += `<td class="px-2 py-3 text-sm font-bold text-gray-900 text-center whitespace-nowrap">${supplyText}</td>`;
+                table += `<td class="px-2 py-3 text-sm text-gray-700 text-center">${row.Non_Ind_Supply}</td>`;
+                table += `<td class="px-2 py-3 text-sm text-gray-700 text-center">${row.Transport_Demand}</td>`;
+                table += `<td class="px-2 py-3 text-sm text-gray-700 text-center">${row.Industry_Demand}</td>`;
+                table += `<td class="px-2 py-3 text-sm text-gray-700 text-center">${row.Res_Demand}</td>`;
+                table += `<td class="px-2 py-3 text-sm text-gray-700 text-center">${row.Ag_Comm_Demand}</td>`;
+                table += `<td class="px-2 py-3 text-sm ${importGapColor} text-center">${row.Import_Gap}</td>`;
+                table += `<td class="px-2 py-3 text-sm text-gray-900 text-center">${row.Import_Dependency}%</td>`;
+                table += '</tr>';
+            });
+            table += '</tbody></table>';
+            
+            // HACK FIX: The invalid "class_HACK_" was breaking the loop. 
+            // This replace() call fixes it properly.
+            container.innerHTML = table;
+        }
+
+        // --- Event Listeners for Live Update ---
+        
+        function setupIncrementers() {
+            document.querySelectorAll('.decrement').forEach(btn => {
+                btn.addEventListener('click', () => {
+                    const input = btn.nextElementSibling;
+                    if (!input) return;
+                    const step = parseFloat(input.step) || 1;
+                    const precision = input.step.includes('.') ? input.step.split('.')[1].length : 0;
+                    input.value = (parseFloat(input.value) - step).toFixed(precision);
+                    input.dispatchEvent(new Event('input'));
+                });
+            });
+            document.querySelectorAll('.increment').forEach(btn => {
+                btn.addEventListener('click', () => {
+                    const input = btn.previousElementSibling;
+                    if (!input) return;
+                    const step = parseFloat(input.step) || 1;
+                    const precision = input.step.includes('.') ? input.step.split('.')[1].length : 0;
+                    input.value = (parseFloat(input.value) + step).toFixed(precision);
+                    input.dispatchEvent(new Event('input'));
+                });
+            });
+        }
+        
+        function setupLogicToggles() {
+            $('industry-toggle').addEventListener('click', () => {
+                $('industry-logic').classList.toggle('hidden');
+            });
+            $('other_energy-toggle').addEventListener('click', () => {
+                $('other_energy-logic').classList.toggle('hidden');
+            });
+            $('non_energy-toggle').addEventListener('click', () => {
+                $('non_energy-logic').classList.toggle('hidden');
+            });
+            $('spr-toggle').addEventListener('click', () => {
+                $('spr-logic').classList.toggle('hidden');
+            });
+            $('parity-toggle').addEventListener('click', () => {
+                $('parity-logic').classList.toggle('hidden');
+            });
+        }
+        
+        // Add event listeners to all inputs
+        document.querySelectorAll('input[type="number"]').forEach(input => {
+            input.addEventListener('input', runProjection);
+        });
+        
+        document.addEventListener('DOMContentLoaded', () => {
+            setupIncrementers();
+            setupLogicToggles();
+            runProjection();
+            
+            // Re-bind listeners just in case
+            document.querySelectorAll('input[type="number"]').forEach(input => {
+                 input.addEventListener('input', runProjection);
+            });
+        });
+
+    </script>
+</body>
+</html>
